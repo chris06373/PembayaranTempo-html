@@ -6,17 +6,132 @@
   <title>Sistem Pengadaan</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    .print-only { display: none; }
+
     @media print {
+      @page {
+        size: A4 portrait;
+        margin: 8mm;
+      }
+
+      html, body {
+        width: 100%;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-size: 10.5px !important;
+        line-height: 1.3 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
       .no-print { display: none !important; }
-      body { background: #ffffff !important; color: #000000 !important; }
-      .print-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
+      .print-only { display: block !important; }
+
+      .print-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .print-grid {
+        display: grid !important;
+        grid-template-columns: 1.65fr 1fr !important;
+        gap: 10px !important;
+        margin-top: 8px !important;
+      }
+
+      .print-left-col {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+      }
+
+      .print-card {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 10px 12px !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .print-card h2 {
+        font-size: 12px !important;
+        margin-bottom: 4px !important;
+      }
+
+      .print-table-wrap {
+        overflow: visible !important;
+      }
+
+      .print-table {
+        min-width: 100% !important;
+        width: 100% !important;
+        font-size: 10px !important;
+      }
+
+      .print-table th,
+      .print-table td {
+        padding: 4px 5px !important;
+      }
+
+      .print-table input,
+      .print-table select {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        font-size: 10px !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+      }
+
+      .print-form-field {
+        border: none !important;
+        background: transparent !important;
+        padding: 1px 0 !important;
+        min-height: 0 !important;
+        font-size: 10.5px !important;
+      }
+
+      .print-compact-notes {
+        rows: 1 !important;
+      }
     }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased">
-  <div class="max-w-7xl mx-auto px-3 sm:px-6 py-6">
-    <!-- Top Bar -->
-    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-3 sm:px-6 py-6 print-container">
+    <!-- Header Cetak Modern (Muncul saat Print) -->
+    <div class="print-only border-b-2 border-slate-900 pb-2.5 mb-2">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-indigo-700">
+            Dokumen Resmi Pengadaan · IDN Tax &amp; Budget
+          </div>
+          <h1 class="text-lg font-extrabold tracking-tight text-slate-900">
+            PURCHASE ORDER (PESANAN PEMBELIAN)
+          </h1>
+          <p class="text-[10px] text-slate-600 mt-0.5">
+            Vendor: <strong id="print-vendor-name" class="text-slate-900">-</strong>
+            <span class="mx-1.5">•</span>
+            NPWP: <span id="print-vendor-npwp" class="font-mono text-slate-800">-</span>
+          </p>
+        </div>
+        <div class="text-right text-[10px] space-y-0.5">
+          <div class="font-mono font-bold text-xs text-slate-900" id="print-po-number">PO-2026-1119-101</div>
+          <div>Status: <strong id="print-po-status" class="text-slate-900">Submitted</strong></div>
+          <div>Tanggal PO: <span id="print-po-date" class="font-medium text-slate-800">2026-11-19</span></div>
+          <div>Jatuh Tempo: <span id="print-due-date" class="font-medium text-slate-800">2026-12-19</span></div>
+        </div>
+      </div>
+      <div class="mt-1.5 pt-1.5 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-600">
+        <div>Cost Center: <strong id="print-cost-center" class="text-slate-900">-</strong></div>
+        <div>Dicetak: <span id="print-generated-at" class="font-mono">-</span></div>
+      </div>
+    </div>
+
+    <!-- Top Bar Layar -->
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-slate-200 no-print">
       <div>
         <div class="flex flex-wrap items-center gap-2">
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -46,9 +161,9 @@
     </header>
 
     <!-- Main Form + Summary Grid -->
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 print-grid">
       <!-- Kolom Kiri & Tengah (2 kolom di desktop) -->
-      <div class="lg:col-span-2 space-y-6">
+      <div class="lg:col-span-2 space-y-6 print-left-col">
         <!-- Info Vendor, Cost Center & Jatuh Tempo -->
         <section class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs print-card space-y-4">
           <h2 class="text-base font-semibold text-slate-900">Informasi Utama, Cost Center & Jatuh Tempo</h2>
@@ -57,12 +172,12 @@
             <div>
               <label class="block text-xs font-medium text-slate-700 mb-1">Vendor / Pemasok *</label>
               <input type="text" id="vendor-name" placeholder="PT Nusantara Digital Prima"
-                class="w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                class="print-form-field w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-700 mb-1">NPWP Vendor</label>
               <input type="text" id="vendor-npwp" placeholder="00.123.456.7-890.000"
-                class="w-full rounded-lg border-slate-300 border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                class="print-form-field w-full rounded-lg border-slate-300 border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
 
@@ -70,7 +185,7 @@
             <div class="sm:col-span-2">
               <label class="block text-xs font-medium text-slate-700 mb-1">Cost Center *</label>
               <select id="cost-center"
-                class="w-full rounded-lg border-slate-300 border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                class="print-form-field w-full rounded-lg border-slate-300 border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="CC-101-IT">CC-101 — Teknologi Informasi (IT)</option>
                 <option value="CC-102-OPS">CC-102 — Operasional & Logistik</option>
                 <option value="CC-103-MKT">CC-103 — Pemasaran & Brand</option>
@@ -80,17 +195,17 @@
             <div>
               <label class="block text-xs font-medium text-slate-700 mb-1">Tanggal PO *</label>
               <input type="date" id="po-date" value="2026-11-19"
-                class="w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                class="print-form-field w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-700 mb-1">Jatuh Tempo Bayar *</label>
               <input type="date" id="due-date" value="2026-12-19"
-                class="w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                class="print-form-field w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
 
           <!-- Indikator Limit Anggaran Cost Center -->
-          <div id="budget-box" class="rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-2">
+          <div id="budget-box" class="no-print rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-2">
             <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span class="font-semibold text-slate-700">Limit Anggaran Cost Center</span>
               <span id="budget-status-text" class="font-semibold text-emerald-700">Aman</span>
@@ -111,7 +226,7 @@
           <div>
             <label class="block text-xs font-medium text-slate-700 mb-1">Deskripsi Kebutuhan / Catatan</label>
             <textarea id="po-notes" rows="2" placeholder="Tuliskan deskripsi pengadaan barang/jasa..."
-              class="w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+              class="print-form-field print-compact-notes w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
           </div>
         </section>
 
@@ -120,7 +235,7 @@
           <div class="flex items-center justify-between gap-2">
             <div>
               <h2 class="text-base font-semibold text-slate-900">Rincian Biaya & Pajak Indonesia</h2>
-              <p class="text-xs text-slate-500">Otomatis hitung DPP, PPN, dan potongan PPh (PPh 23 / PPh 4(2)).</p>
+              <p class="text-xs text-slate-500 no-print">Otomatis hitung DPP, PPN, dan potongan PPh (PPh 23 / PPh 4(2)).</p>
             </div>
             <button type="button" id="add-item-btn"
               class="no-print shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition">
@@ -128,8 +243,8 @@
             </button>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[680px] text-left border-collapse">
+          <div class="overflow-x-auto print-table-wrap">
+            <table class="w-full min-w-[680px] text-left border-collapse print-table">
               <thead>
                 <tr class="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
                   <th class="py-2 pr-2">Deskripsi</th>
@@ -170,6 +285,17 @@
           <div class="text-xs text-slate-500 flex justify-between pt-1">
             <span>Jatuh Tempo:</span>
             <strong id="sum-due-date" class="text-slate-700">2026-12-19</strong>
+          </div>
+
+          <div class="print-only pt-3 mt-2 border-t border-slate-200 grid grid-cols-2 gap-4 text-center text-[10px]">
+            <div>
+              <div class="text-slate-500 mb-6">Diajukan Oleh</div>
+              <div class="border-t border-slate-400 pt-1 font-semibold text-slate-800">Admin Pengadaan</div>
+            </div>
+            <div>
+              <div class="text-slate-500 mb-6">Disetujui Oleh</div>
+              <div class="border-t border-slate-400 pt-1 font-semibold text-slate-800">Supervisor</div>
+            </div>
           </div>
         </section>
 
@@ -312,6 +438,24 @@
       }
     };
 
+    const syncPrintPreview = () => {
+      const ccCode = document.getElementById('cost-center').value;
+      const ccLabel = COST_CENTERS[ccCode]?.name || ccCode;
+      document.getElementById('print-po-number').textContent = document.getElementById('po-number').textContent;
+      document.getElementById('print-po-status').textContent = currentStatus;
+      document.getElementById('print-vendor-name').textContent =
+        document.getElementById('vendor-name').value.trim() || 'Vendor Tanpa Nama';
+      document.getElementById('print-vendor-npwp').textContent =
+        document.getElementById('vendor-npwp').value.trim() || '-';
+      document.getElementById('print-cost-center').textContent = ccLabel;
+      document.getElementById('print-po-date').textContent = document.getElementById('po-date').value || '-';
+      document.getElementById('print-due-date').textContent = document.getElementById('due-date').value || '-';
+      document.getElementById('print-generated-at').textContent = new Date().toLocaleString('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+    };
+
     const addLogEntry = ({ poNumber, role, action, note, amount = 0, isApproved = false }) => {
       const entry = {
         id: Date.now() + '-' + Math.random().toString(36).slice(2, 6),
@@ -342,6 +486,7 @@
         badge.textContent = 'Submitted';
       }
       syncApproveButtonState();
+      syncPrintPreview();
     };
 
     const addItemRow = (desc = '', qty = 1, price = 0, ppn = 0.11, pph = 0) => {
@@ -460,6 +605,7 @@
         statusTxt.textContent = `Aman (${pct}%)`;
         warn.classList.add('hidden');
       }
+      syncPrintPreview();
     };
 
     const collectPoPayload = (status, approvedOnce) => {
@@ -679,7 +825,14 @@
     document.getElementById('add-item-btn').addEventListener('click', () => addItemRow());
     document.getElementById('cost-center').addEventListener('change', calculateAndUpdateBudget);
     document.getElementById('due-date').addEventListener('change', calculateAndUpdateBudget);
-    document.getElementById('btn-print-po').addEventListener('click', () => window.print());
+    document.getElementById('vendor-name').addEventListener('input', syncPrintPreview);
+    document.getElementById('vendor-npwp').addEventListener('input', syncPrintPreview);
+    document.getElementById('po-date').addEventListener('change', syncPrintPreview);
+    document.getElementById('btn-print-po').addEventListener('click', () => {
+      syncPrintPreview();
+      window.print();
+    });
+    window.addEventListener('beforeprint', syncPrintPreview);
     document.getElementById('btn-new-po').addEventListener('click', resetNewPo);
     document.getElementById('search-po').addEventListener('input', renderPoHistory);
     document.getElementById('search-log').addEventListener('input', renderLogHistory);
