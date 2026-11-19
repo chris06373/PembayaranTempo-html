@@ -119,7 +119,7 @@
         </div>
         <div class="text-right text-[10px] space-y-0.5">
           <div class="font-mono font-bold text-xs text-slate-900" id="print-po-number">PO-2026-1119-101</div>
-          <div>Status: <strong id="print-po-status" class="text-slate-900">Submitted</strong></div>
+          <div>Status: <strong id="print-po-status" class="text-slate-900">Draft</strong></div>
           <div>Tanggal PO: <span id="print-po-date" class="font-medium text-slate-800">2026-11-19</span></div>
           <div>Jatuh Tempo: <span id="print-due-date" class="font-medium text-slate-800">2026-12-19</span></div>
         </div>
@@ -140,15 +140,19 @@
           <span class="text-xs text-slate-500">
             No. PO: <strong id="po-number" class="font-mono text-slate-800">PO-2026-1119-101</strong>
           </span>
-          <span id="po-status-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
-            Submitted
+          <span id="po-status-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+            Draft
           </span>
         </div>
         <h1 class="text-xl sm:text-2xl font-bold text-slate-900 mt-1">Purchase Order (Pesanan Pembelian)</h1>
         <p class="text-xs sm:text-sm text-slate-500">Kelola pengajuan PO, cek limit cost center, jatuh tempo, cetak dokumen, dan histori.</p>
       </div>
 
-      <div class="flex items-center gap-2 no-print">
+      <div class="flex flex-wrap items-center gap-2 no-print">
+        <button type="button" id="btn-reset-all"
+          class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition">
+          Reset All
+        </button>
         <button type="button" id="btn-new-po"
           class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 transition">
           + PO Baru
@@ -303,24 +307,25 @@
         <section class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs no-print space-y-4">
           <div>
             <h2 class="text-base font-semibold text-slate-900">Proses PO & Persetujuan Supervisor</h2>
-            <p class="text-xs text-slate-500">Submit PO, atau lakukan Approve (hanya 1x) dan Revisi oleh Supervisor.</p>
+            <p class="text-xs text-slate-500">Submit PO terlebih dahulu sebelum Approve (hanya 1x). Setelah Approved tidak bisa Revisi.</p>
           </div>
 
           <div>
             <label class="block text-xs font-medium text-slate-700 mb-1">Catatan / Keterangan</label>
             <input type="text" id="action-note" placeholder="Catatan submit, approval supervisor, atau revisi..."
               class="w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <p id="saved-submit-note-hint" class="hidden mt-1 text-[11px] text-indigo-700"></p>
           </div>
 
           <button type="button" id="btn-submit"
-            class="w-full py-2.5 px-4 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition">
+            class="w-full py-2.5 px-4 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
             Submit PO
           </button>
 
           <div class="pt-1 border-t border-slate-100 space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-500">
               <span>Keputusan Supervisor</span>
-              <span id="approve-lock-info" class="font-medium text-slate-600">Approve tersedia (1x)</span>
+              <span id="approve-lock-info" class="font-medium text-slate-600">Submit PO dulu sebelum Approve</span>
             </div>
             <div class="grid grid-cols-2 gap-2.5">
               <button type="button" id="btn-sup-approve"
@@ -328,7 +333,7 @@
                 Approve
               </button>
               <button type="button" id="btn-sup-revise"
-                class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition">
+                class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
                 Revisi
               </button>
             </div>
@@ -384,9 +389,9 @@
 
   <script>
     const STORAGE_KEYS = {
-      POS: 'po_app_v3_pos',
-      LOGS: 'po_app_v3_logs',
-      SEQ: 'po_app_v3_seq'
+      POS: 'po_app_v4_pos',
+      LOGS: 'po_app_v4_logs',
+      SEQ: 'po_app_v4_seq'
     };
 
     const COST_CENTERS = {
@@ -413,12 +418,19 @@
     let poList = loadData(STORAGE_KEYS.POS, []);
     let logList = loadData(STORAGE_KEYS.LOGS, []);
     let seqNum = loadData(STORAGE_KEYS.SEQ, 101);
-    let currentStatus = 'Submitted'; // 'Submitted' | 'Approved' | 'Revisi'
+
+    // Status: 'Draft' | 'Submitted' | 'Approved' | 'Revisi'
+    let currentStatus = 'Draft';
+    let hasSubmittedCurrentPo = false;
     let currentApprovedOnce = false;
+    let currentSubmittedNote = '';
 
     const tbody = document.getElementById('items-tbody');
+    const btnSubmit = document.getElementById('btn-submit');
     const btnApprove = document.getElementById('btn-sup-approve');
+    const btnRevise = document.getElementById('btn-sup-revise');
     const approveLockInfo = document.getElementById('approve-lock-info');
+    const savedSubmitNoteHint = document.getElementById('saved-submit-note-hint');
 
     const generatePoNumber = () => {
       const d = new Date();
@@ -426,15 +438,31 @@
       return `PO-${ymd}-${seqNum}`;
     };
 
-    const syncApproveButtonState = () => {
-      const alreadyApproved = currentApprovedOnce || currentStatus === 'Approved';
-      btnApprove.disabled = alreadyApproved;
-      if (alreadyApproved) {
-        approveLockInfo.textContent = 'Sudah di-Approve (1x)';
+    const syncActionButtonsState = () => {
+      const isApproved = currentStatus === 'Approved' || currentApprovedOnce;
+      const canApprove = hasSubmittedCurrentPo && !isApproved;
+
+      btnSubmit.disabled = isApproved;
+      btnApprove.disabled = !canApprove;
+      btnRevise.disabled = isApproved;
+
+      if (isApproved) {
+        approveLockInfo.textContent = 'Sudah di-Approve (1x) · Revisi terkunci';
         approveLockInfo.className = 'font-semibold text-emerald-700';
+      } else if (!hasSubmittedCurrentPo) {
+        approveLockInfo.textContent = 'Submit PO dulu sebelum Approve';
+        approveLockInfo.className = 'font-medium text-amber-700';
       } else {
         approveLockInfo.textContent = 'Approve tersedia (1x)';
         approveLockInfo.className = 'font-medium text-slate-600';
+      }
+
+      if (currentSubmittedNote) {
+        savedSubmitNoteHint.textContent = `Catatan saat Submit PO: "${currentSubmittedNote}"`;
+        savedSubmitNoteHint.classList.remove('hidden');
+      } else {
+        savedSubmitNoteHint.textContent = '';
+        savedSubmitNoteHint.classList.add('hidden');
       }
     };
 
@@ -481,11 +509,14 @@
       } else if (status === 'Revisi') {
         badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800';
         badge.textContent = 'Revisi';
-      } else {
+      } else if (status === 'Submitted') {
         badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800';
         badge.textContent = 'Submitted';
+      } else {
+        badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700';
+        badge.textContent = 'Draft';
       }
-      syncApproveButtonState();
+      syncActionButtonsState();
       syncPrintPreview();
     };
 
@@ -608,7 +639,7 @@
       syncPrintPreview();
     };
 
-    const collectPoPayload = (status, approvedOnce) => {
+    const collectPoPayload = (status) => {
       const totals = getFormTotals();
       return {
         poNumber: document.getElementById('po-number').textContent,
@@ -624,7 +655,9 @@
         pph: totals.pph,
         net: totals.net,
         status,
-        approvedOnce,
+        hasSubmitted: hasSubmittedCurrentPo,
+        approvedOnce: currentApprovedOnce,
+        submittedNote: currentSubmittedNote,
         updatedAt: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })
       };
     };
@@ -651,8 +684,14 @@
       document.getElementById('po-date').value = poObj.poDate || '2026-11-19';
       document.getElementById('due-date').value = poObj.dueDate || '2026-12-19';
       document.getElementById('po-notes').value = poObj.notes || '';
+      document.getElementById('action-note').value = '';
+
       currentApprovedOnce = Boolean(poObj.approvedOnce || poObj.status === 'Approved');
-      setStatusBadge(poObj.status || 'Submitted');
+      hasSubmittedCurrentPo = Boolean(
+        poObj.hasSubmitted || poObj.status === 'Submitted' || poObj.status === 'Revisi' || currentApprovedOnce
+      );
+      currentSubmittedNote = poObj.submittedNote || '';
+      setStatusBadge(poObj.status || 'Draft');
 
       tbody.innerHTML = '';
       if (Array.isArray(poObj.items) && poObj.items.length > 0) {
@@ -669,11 +708,27 @@
       document.getElementById('vendor-npwp').value = '';
       document.getElementById('po-notes').value = '';
       document.getElementById('action-note').value = '';
+      hasSubmittedCurrentPo = false;
       currentApprovedOnce = false;
-      setStatusBadge('Submitted');
+      currentSubmittedNote = '';
+      setStatusBadge('Draft');
       tbody.innerHTML = '';
       addItemRow('', 1, 0, 0.11, 0);
       calculateAndUpdateBudget();
+    };
+
+    const resetAllData = () => {
+      localStorage.removeItem(STORAGE_KEYS.POS);
+      localStorage.removeItem(STORAGE_KEYS.LOGS);
+      localStorage.removeItem(STORAGE_KEYS.SEQ);
+      poList = [];
+      logList = [];
+      seqNum = 101;
+      document.getElementById('search-po').value = '';
+      document.getElementById('search-log').value = '';
+      resetNewPo();
+      renderPoHistory();
+      renderLogHistory();
     };
 
     const renderPoHistory = () => {
@@ -702,7 +757,9 @@
               ? 'bg-emerald-100 text-emerald-800'
               : p.status === 'Revisi'
               ? 'bg-rose-100 text-rose-800'
-              : 'bg-amber-100 text-amber-800';
+              : p.status === 'Submitted'
+              ? 'bg-amber-100 text-amber-800'
+              : 'bg-slate-100 text-slate-700';
           return `
             <tr class="hover:bg-slate-50 cursor-pointer" data-po="${p.poNumber}">
               <td class="py-2.5 pr-2">
@@ -765,56 +822,70 @@
         .join('');
     };
 
-    // Submit PO langsung
-    document.getElementById('btn-submit').addEventListener('click', () => {
-      const poObj = collectPoPayload('Submitted', currentApprovedOnce);
+    // Submit PO langsung (wajib sebelum Approve)
+    btnSubmit.addEventListener('click', () => {
+      if (currentStatus === 'Approved' || currentApprovedOnce) return;
+      const inputNote = document.getElementById('action-note').value.trim();
+      if (inputNote) {
+        currentSubmittedNote = inputNote;
+      }
+      hasSubmittedCurrentPo = true;
+      const poObj = collectPoPayload('Submitted');
       setStatusBadge('Submitted');
       upsertPo(poObj);
-      const note = document.getElementById('action-note').value.trim();
       addLogEntry({
         poNumber: poObj.poNumber,
         role: 'Admin',
         action: 'Submit PO',
-        note,
+        note: inputNote || currentSubmittedNote,
         amount: poObj.net,
         isApproved: false
       });
       document.getElementById('action-note').value = '';
     });
 
-    // Supervisor Approve -> hanya bisa 1x per PO, langsung masuk ke Histori Log sebagai PO Disetujui
+    // Supervisor Approve -> hanya bisa setelah Submit PO & hanya 1x per PO; catatan Submit ikut terbawa
     btnApprove.addEventListener('click', () => {
-      if (currentApprovedOnce || currentStatus === 'Approved') {
-        syncApproveButtonState();
+      if (!hasSubmittedCurrentPo || currentApprovedOnce || currentStatus === 'Approved') {
+        syncActionButtonsState();
         return;
       }
+      const inputNote = document.getElementById('action-note').value.trim();
+      const combinedNote =
+        currentSubmittedNote && inputNote
+          ? `${currentSubmittedNote} | Approve: ${inputNote}`
+          : inputNote || currentSubmittedNote;
+
       currentApprovedOnce = true;
-      const poObj = collectPoPayload('Approved', true);
+      const poObj = collectPoPayload('Approved');
       setStatusBadge('Approved');
       upsertPo(poObj);
-      const note = document.getElementById('action-note').value.trim();
       addLogEntry({
         poNumber: poObj.poNumber,
         role: 'Supervisor',
         action: 'Approve PO',
-        note,
+        note: combinedNote,
         amount: poObj.net,
         isApproved: true
       });
       document.getElementById('action-note').value = '';
     });
 
-    // Supervisor Revisi
-    document.getElementById('btn-sup-revise').addEventListener('click', () => {
-      const poObj = collectPoPayload('Revisi', currentApprovedOnce);
+    // Supervisor Revisi -> tidak bisa jika sudah Approved
+    btnRevise.addEventListener('click', () => {
+      if (currentStatus === 'Approved' || currentApprovedOnce) {
+        syncActionButtonsState();
+        return;
+      }
+      const inputNote = document.getElementById('action-note').value.trim();
+      const poObj = collectPoPayload('Revisi');
       setStatusBadge('Revisi');
       upsertPo(poObj);
-      const note = document.getElementById('action-note').value.trim();
       addLogEntry({
         poNumber: poObj.poNumber,
         role: 'Supervisor',
         action: 'Revisi PO',
-        note,
+        note: inputNote,
         amount: poObj.net,
         isApproved: false
       });
@@ -834,13 +905,14 @@
     });
     window.addEventListener('beforeprint', syncPrintPreview);
     document.getElementById('btn-new-po').addEventListener('click', resetNewPo);
+    document.getElementById('btn-reset-all').addEventListener('click', resetAllData);
     document.getElementById('search-po').addEventListener('input', renderPoHistory);
     document.getElementById('search-log').addEventListener('input', renderLogHistory);
 
     // Inisialisasi awal
     document.getElementById('po-number').textContent = generatePoNumber();
     addItemRow('Layanan Cloud & Lisensi Software', 1, 18000000, 0.11, 0.02);
-    syncApproveButtonState();
+    setStatusBadge('Draft');
     renderPoHistory();
     renderLogHistory();
     calculateAndUpdateBudget();
