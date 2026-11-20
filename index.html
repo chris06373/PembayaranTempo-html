@@ -343,6 +343,27 @@
             Submit PO
           </button>
 
+          <!-- Letakkan di panel Proses PO (dekat btn-submit) -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <button type="button" id="btn-save-draft"
+              class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-slate-100 text-slate-800 border border-slate-300 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition">
+              Simpan Draft
+            </button>
+            <button type="button" id="btn-submit"
+              class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
+              Submit PO
+            </button>
+          </div>
+          
+          <!-- Tombol Purchase Invoice (aktif hanya jika status Approved) -->
+          <button type="button" id="btn-create-pi" disabled
+            class="w-full py-2.5 px-4 rounded-lg text-sm font-semibold bg-emerald-700 text-white hover:bg-emerald-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
+            + Buat Purchase Invoice
+          </button>
+          <p id="pi-lock-hint" class="text-[11px] text-slate-500">
+            Purchase Invoice hanya bisa dibuat setelah PO berstatus <strong>Approved</strong>.
+          </p>
+
           <div class="pt-1 border-t border-slate-100 space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-500">
               <span>Keputusan Supervisor</span>
@@ -1037,6 +1058,121 @@
     renderPoHistory();
     renderLogHistory();
     calculateAndUpdateBudget();
+
+    // Tambah key draft di STORAGE_KEYS
+STORAGE_KEYS.DRAFT = 'po_app_v4_draft';
+
+const btnSaveDraft = document.getElementById('btn-save-draft');
+const btnCreatePi = document.getElementById('btn-create-pi');
+const piLockHint = document.getElementById('pi-lock-hint');
+
+// Update syncActionButtonsState():
+// - Jika status 'Submitted' atau 'Approved', tombol Submit PO dikunci (kecuali status 'Revisi' atau klik '+ PO Baru')
+// - Tombol 'Buat Purchase Invoice' hanya aktif saat currentStatus === 'Approved'
+const syncActionButtonsState = () => {
+  const isApproved = currentStatus === 'Approved' || currentApprovedOnce;
+  const isLockedSubmit = currentStatus === 'Submitted' || isApproved;
+  const canActAfterSubmit = hasSubmittedCurrentPo && !isApproved;
+
+  btnSaveDraft.disabled = isApproved || currentStatus === 'Submitted';
+  btnSubmit.disabled = isLockedSubmit;
+  btnApprove.disabled = !canActAfterSubmit;
+  btnRevise.disabled = !canActAfterSubmit;
+  btnCreatePi.disabled = !isApproved;
+
+  if (isApproved) {
+    approveLockInfo.textContent = 'Sudah di-Approve · Buat PO Baru untuk submit lagi';
+    approveLockInfo.className = 'font-semibold text-emerald-700';
+    piLockHint.textContent = 'PO sudah Approved — siap membuat Purchase Invoice.';
+    piLockHint.className = 'text-[11px] font-medium text-emerald-700';
+  } else if (currentStatus === 'Submitted') {
+    approveLockInfo.textContent = 'Menunggu Supervisor (Terkunci kecuali Revisi / PO Baru)';
+    approveLockInfo.className = 'font-medium text-amber-700';
+    piLockHint.textContent = 'Menunggu status Approved untuk membuat Purchase Invoice.';
+    piLockHint.className = 'text-[11px] text-slate-500';
+  } else if (currentStatus === 'Revisi') {
+    approveLockInfo.textContent = 'Status Revisi · Silakan perbaiki lalu Submit PO ulang';
+    approveLockInfo.className = 'font-medium text-rose-700';
+    piLockHint.textContent = 'PO perlu disubmit ulang dan di-Approve sebelum buat Invoice.';
+    piLockHint.className = 'text-[11px] text-slate-500';
+  } else {
+    approveLockInfo.textContent = 'Draft / Submit PO dulu sebelum Approve & Revisi';
+    approveLockInfo.className = 'font-medium text-slate-600';
+    piLockHint.textContent = 'Purchase Invoice hanya bisa dibuat setelah PO berstatus Approved.';
+    piLockHint.className = 'text-[11px] text-slate-500';
+  }
+};
+
+// Simpan Draft manual & otomatis
+const saveDraftToStorage = (silent = false) => {
+  if (currentStatus === 'Approved' || currentStatus === 'Submitted') return;
+  const draftObj = collectPoPayload(currentStatus === 'Revisi' ? 'Revisi' : 'Draft');
+  saveData(STORAGE_KEYS.DRAFT, draftObj);
+  upsertPo(draftObj);
+  if (!silent) {
+    addLogEntry({
+      poNumber: draftObj.poNumber,
+      role: 'Admin',
+      action: 'Simpan Draft PO',
+      note: document.getElementById('action-note').value.trim() || 'Tersimpan sebagai draft',
+      amount: draftObj.net,
+      isApproved: false
+    });
+  }
+};
+
+// Fitur Penutup Kekurangan 1: Deteksi potensi PO duplikat (Vendor + Cost Center + Total Netto)
+const hasDuplicatePo = (candidate) =>
+  poList.some(
+    (p) =>
+      p.poNumber !== candidate.poNumber &&
+      (p.status === 'Submitted' || p.status === 'Approved') &&
+      p.vendor.toLowerCase() === candidate.vendor.toLowerCase() &&
+      p.costCenter === candidate.costCenter &&
+      p.net === candidate.net
+  );
+
+// Fitur Penutup Kekurangan 2: Auto-save draft saat input berubah (ketika masih Draft/Revisi)
+const autoSaveDraft = () => {
+  if (currentStatus === 'Draft' || currentStatus === 'Revisi') {
+    saveDraftToStorage(true);
+  }
+};
+
+btnSaveDraft.addEventListener('click', () => saveDraftToStorage(false));
+
+// Di handler btnSubmit: cegah submit jika sudah Submitted/Approved & cek duplikasi
+btnSubmit.addEventListener('click', () => {
+  if (currentStatus === 'Submitted' || currentStatus === 'Approved' || currentApprovedOnce) return;
+  const totals = getFormTotals();
+  const errMsg = validatePoForSubmit(totals);
+  if (errMsg) return showValidationMsg(errMsg);
+
+  const candidate = collectPoPayload('Submitted');
+  if (hasDuplicatePo(candidate)) {
+    return showValidationMsg(
+      'Peringatan: Ada PO aktif/disetujui dengan Vendor, Cost Center, dan Total yang sama. Pastikan bukan duplikasi.'
+    );
+  }
+  // ...lanjutkan proses submit & lock tombol via setStatusBadge('Submitted')
+});
+
+// Gate pembuatan Purchase Invoice: hanya jalan jika status Approved
+btnCreatePi.addEventListener('click', () => {
+  if (currentStatus !== 'Approved') {
+    return showValidationMsg('Purchase Invoice tidak bisa dibuat sebelum PO berstatus Approved.');
+  }
+  const poData = collectPoPayload('Approved');
+  addLogEntry({
+    poNumber: poData.poNumber,
+    role: 'Finance/Admin',
+    action: 'Buat Purchase Invoice',
+    note: `Referensi PO ${poData.poNumber} (Jatuh tempo ${poData.dueDate})`,
+    amount: poData.net,
+    isApproved: true
+  });
+  alert(`Purchase Invoice untuk ${poData.poNumber} (${formatIDR(poData.net)}) siap diproses.`);
+});
   </script>
 </body>
 </html>
