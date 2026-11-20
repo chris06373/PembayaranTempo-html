@@ -185,8 +185,8 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="sm:col-span-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="sm:col-span-2 lg:col-span-2">
               <label class="block text-xs font-medium text-slate-700 mb-1">Cost Center *</label>
               <select id="cost-center"
                 class="print-form-field w-full rounded-lg border-slate-300 border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -202,7 +202,17 @@
                 class="print-form-field w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
-              <label class="block text-xs font-medium text-slate-700 mb-1">Jatuh Tempo Bayar *</label>
+              <label class="block text-xs font-medium text-slate-700 mb-1">Term (TOP)</label>
+              <select id="top-days"
+                class="no-print w-full rounded-lg border-slate-300 border px-2.5 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="14">14 Hari</option>
+                <option value="30" selected>30 Hari</option>
+                <option value="45">45 Hari</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">Jatuh Tempo *</label>
               <input type="date" id="due-date" value="2026-12-19"
                 class="print-form-field w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
@@ -236,15 +246,25 @@
 
         <!-- Rincian Item & Pajak Indonesia -->
         <section class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs print-card space-y-4">
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 class="text-base font-semibold text-slate-900">Rincian Biaya & Pajak Indonesia</h2>
               <p class="text-xs text-slate-500 no-print">Otomatis hitung DPP, PPN, dan potongan PPh (PPh 23 / PPh 4(2)).</p>
             </div>
-            <button type="button" id="add-item-btn"
-              class="no-print shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition">
-              + Tambah Item
-            </button>
+            <div class="flex flex-wrap items-center gap-2 no-print">
+              <select id="preset-item"
+                class="rounded-lg border-slate-300 border px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">+ Preset Item Cepat...</option>
+                <option value="cloud">Lisensi Cloud & SaaS (PPN 11%, PPh 23 2%)</option>
+                <option value="laptop">Laptop / Perangkat IT (PPN 11%, PPh 0%)</option>
+                <option value="konsultan">Jasa Konsultan / Maintenance (PPN 11%, PPh 23 2%)</option>
+                <option value="sewa">Sewa Ruang / Gudang (PPN 11%, PPh 4(2) 10%)</option>
+              </select>
+              <button type="button" id="add-item-btn"
+                class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                + Tambah Item
+              </button>
+            </div>
           </div>
 
           <div class="overflow-x-auto print-table-wrap">
@@ -307,7 +327,7 @@
         <section class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs no-print space-y-4">
           <div>
             <h2 class="text-base font-semibold text-slate-900">Proses PO & Persetujuan Supervisor</h2>
-            <p class="text-xs text-slate-500">Submit PO terlebih dahulu sebelum Approve (hanya 1x). Setelah Approved tidak bisa Revisi.</p>
+            <p class="text-xs text-slate-500">Submit PO terlebih dahulu sebelum Approve &amp; Revisi (Approve hanya 1x).</p>
           </div>
 
           <div>
@@ -315,6 +335,7 @@
             <input type="text" id="action-note" placeholder="Catatan submit, approval supervisor, atau revisi..."
               class="w-full rounded-lg border-slate-300 border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             <p id="saved-submit-note-hint" class="hidden mt-1 text-[11px] text-indigo-700"></p>
+            <p id="form-validation-msg" class="hidden mt-1 text-xs font-medium text-rose-700"></p>
           </div>
 
           <button type="button" id="btn-submit"
@@ -325,14 +346,14 @@
           <div class="pt-1 border-t border-slate-100 space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-500">
               <span>Keputusan Supervisor</span>
-              <span id="approve-lock-info" class="font-medium text-slate-600">Submit PO dulu sebelum Approve</span>
+              <span id="approve-lock-info" class="font-medium text-slate-600">Submit PO dulu sebelum Approve &amp; Revisi</span>
             </div>
             <div class="grid grid-cols-2 gap-2.5">
-              <button type="button" id="btn-sup-approve"
+              <button type="button" id="btn-sup-approve" disabled
                 class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
                 Approve
               </button>
-              <button type="button" id="btn-sup-revise"
+              <button type="button" id="btn-sup-revise" disabled
                 class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
                 Revisi
               </button>
@@ -401,6 +422,13 @@
       'CC-104-FIN': { name: 'CC-104 — Keuangan & Legal', limit: 100000000 }
     };
 
+    const ITEM_PRESETS = {
+      cloud: { desc: 'Layanan Cloud & Lisensi Software', qty: 1, price: 18000000, ppn: 0.11, pph: 0.02 },
+      laptop: { desc: 'Laptop Kerja & Aksesoris IT', qty: 2, price: 12500000, ppn: 0.11, pph: 0 },
+      konsultan: { desc: 'Jasa Implementasi & Maintenance Sistem', qty: 1, price: 25000000, ppn: 0.11, pph: 0.02 },
+      sewa: { desc: 'Sewa Ruang Operasional Bulanan', qty: 1, price: 15000000, ppn: 0.11, pph: 0.10 }
+    };
+
     const formatIDR = (n) =>
       new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
 
@@ -431,6 +459,17 @@
     const btnRevise = document.getElementById('btn-sup-revise');
     const approveLockInfo = document.getElementById('approve-lock-info');
     const savedSubmitNoteHint = document.getElementById('saved-submit-note-hint');
+    const formValidationMsg = document.getElementById('form-validation-msg');
+
+    const clearValidationMsg = () => {
+      formValidationMsg.textContent = '';
+      formValidationMsg.classList.add('hidden');
+    };
+
+    const showValidationMsg = (msg) => {
+      formValidationMsg.textContent = msg;
+      formValidationMsg.classList.remove('hidden');
+    };
 
     const generatePoNumber = () => {
       const d = new Date();
@@ -438,22 +477,42 @@
       return `PO-${ymd}-${seqNum}`;
     };
 
+    // Fitur 2: Hitung jatuh tempo otomatis dari Tanggal PO + hari TOP
+    const applyDueDateFromTop = () => {
+      const topVal = document.getElementById('top-days').value;
+      if (topVal === 'custom') return;
+      const days = parseInt(topVal, 10);
+      const poDateStr = document.getElementById('po-date').value;
+      if (!poDateStr || Number.isNaN(days)) return;
+
+      const base = new Date(`${poDateStr}T00:00:00`);
+      if (Number.isNaN(base.getTime())) return;
+      base.setDate(base.getDate() + days);
+
+      const yyyy = base.getFullYear();
+      const mm = String(base.getMonth() + 1).padStart(2, '0');
+      const dd = String(base.getDate()).padStart(2, '0');
+      document.getElementById('due-date').value = `${yyyy}-${mm}-${dd}`;
+      calculateAndUpdateBudget();
+    };
+
     const syncActionButtonsState = () => {
       const isApproved = currentStatus === 'Approved' || currentApprovedOnce;
-      const canApprove = hasSubmittedCurrentPo && !isApproved;
+      // Approve & Revisi baru aktif setelah Submit PO, dan terkunci jika sudah Approved
+      const canActAfterSubmit = hasSubmittedCurrentPo && !isApproved;
 
       btnSubmit.disabled = isApproved;
-      btnApprove.disabled = !canApprove;
-      btnRevise.disabled = isApproved;
+      btnApprove.disabled = !canActAfterSubmit;
+      btnRevise.disabled = !canActAfterSubmit;
 
       if (isApproved) {
         approveLockInfo.textContent = 'Sudah di-Approve (1x) · Revisi terkunci';
         approveLockInfo.className = 'font-semibold text-emerald-700';
       } else if (!hasSubmittedCurrentPo) {
-        approveLockInfo.textContent = 'Submit PO dulu sebelum Approve';
+        approveLockInfo.textContent = 'Submit PO dulu sebelum Approve & Revisi';
         approveLockInfo.className = 'font-medium text-amber-700';
       } else {
-        approveLockInfo.textContent = 'Approve tersedia (1x)';
+        approveLockInfo.textContent = 'Siap diproses Supervisor (Approve 1x)';
         approveLockInfo.className = 'font-medium text-slate-600';
       }
 
@@ -553,8 +612,14 @@
         </td>
       `;
       tr.querySelectorAll('input, select').forEach((el) => {
-        el.addEventListener('input', calculateAndUpdateBudget);
-        el.addEventListener('change', calculateAndUpdateBudget);
+        el.addEventListener('input', () => {
+          clearValidationMsg();
+          calculateAndUpdateBudget();
+        });
+        el.addEventListener('change', () => {
+          clearValidationMsg();
+          calculateAndUpdateBudget();
+        });
       });
       tr.querySelector('.remove-item').addEventListener('click', () => {
         if (tbody.children.length > 1) {
@@ -588,6 +653,23 @@
         items.push({ desc, qty, price, ppnRate, pphRate, lineNet });
       });
       return { dpp, ppn, pph, net: dpp + ppn - pph, items };
+    };
+
+    // Fitur 3: Validasi data wajib sebelum Submit PO
+    const validatePoForSubmit = (totals) => {
+      const vendor = document.getElementById('vendor-name').value.trim();
+      const poDate = document.getElementById('po-date').value;
+      const dueDate = document.getElementById('due-date').value;
+
+      if (!vendor) return 'Nama Vendor / Pemasok wajib diisi sebelum Submit PO.';
+      if (!poDate || !dueDate) return 'Tanggal PO dan Jatuh Tempo wajib diisi.';
+      if (dueDate < poDate) return 'Jatuh Tempo tidak boleh lebih awal dari Tanggal PO.';
+
+      const validItems = totals.items.filter((it) => it.desc && it.qty > 0 && it.price > 0);
+      if (validItems.length === 0) {
+        return 'Minimal isi 1 item dengan Deskripsi, Qty (> 0), dan Harga Satuan (> 0).';
+      }
+      return '';
     };
 
     const getUsedBudgetByCC = (ccCode, excludePoNumber = null) =>
@@ -677,18 +759,21 @@
     };
 
     const loadPoToForm = (poObj) => {
+      clearValidationMsg();
       document.getElementById('po-number').textContent = poObj.poNumber;
       document.getElementById('vendor-name').value = poObj.vendor || '';
       document.getElementById('vendor-npwp').value = poObj.npwp || '';
       document.getElementById('cost-center').value = poObj.costCenter || 'CC-101-IT';
       document.getElementById('po-date').value = poObj.poDate || '2026-11-19';
+      document.getElementById('top-days').value = 'custom';
       document.getElementById('due-date').value = poObj.dueDate || '2026-12-19';
       document.getElementById('po-notes').value = poObj.notes || '';
       document.getElementById('action-note').value = '';
 
       currentApprovedOnce = Boolean(poObj.approvedOnce || poObj.status === 'Approved');
+      // Jika status 'Revisi', wajib Submit ulang sebelum Approve/Revisi lagi
       hasSubmittedCurrentPo = Boolean(
-        poObj.hasSubmitted || poObj.status === 'Submitted' || poObj.status === 'Revisi' || currentApprovedOnce
+        !currentApprovedOnce && poObj.status !== 'Revisi' && (poObj.hasSubmitted || poObj.status === 'Submitted')
       );
       currentSubmittedNote = poObj.submittedNote || '';
       setStatusBadge(poObj.status || 'Draft');
@@ -703,18 +788,20 @@
     };
 
     const resetNewPo = () => {
+      clearValidationMsg();
       document.getElementById('po-number').textContent = generatePoNumber();
       document.getElementById('vendor-name').value = '';
       document.getElementById('vendor-npwp').value = '';
       document.getElementById('po-notes').value = '';
       document.getElementById('action-note').value = '';
+      document.getElementById('top-days').value = '30';
       hasSubmittedCurrentPo = false;
       currentApprovedOnce = false;
       currentSubmittedNote = '';
       setStatusBadge('Draft');
       tbody.innerHTML = '';
       addItemRow('', 1, 0, 0.11, 0);
-      calculateAndUpdateBudget();
+      applyDueDateFromTop();
     };
 
     const resetAllData = () => {
@@ -822,9 +909,17 @@
         .join('');
     };
 
-    // Submit PO langsung (wajib sebelum Approve)
+    // Submit PO (wajib valid & wajib sebelum Approve/Revisi)
     btnSubmit.addEventListener('click', () => {
       if (currentStatus === 'Approved' || currentApprovedOnce) return;
+      const totals = getFormTotals();
+      const errMsg = validatePoForSubmit(totals);
+      if (errMsg) {
+        showValidationMsg(errMsg);
+        return;
+      }
+      clearValidationMsg();
+
       const inputNote = document.getElementById('action-note').value.trim();
       if (inputNote) {
         currentSubmittedNote = inputNote;
@@ -844,7 +939,7 @@
       document.getElementById('action-note').value = '';
     });
 
-    // Supervisor Approve -> hanya bisa setelah Submit PO & hanya 1x per PO; catatan Submit ikut terbawa
+    // Supervisor Approve -> hanya bisa setelah Submit PO & hanya 1x per PO
     btnApprove.addEventListener('click', () => {
       if (!hasSubmittedCurrentPo || currentApprovedOnce || currentStatus === 'Approved') {
         syncActionButtonsState();
@@ -871,13 +966,14 @@
       document.getElementById('action-note').value = '';
     });
 
-    // Supervisor Revisi -> tidak bisa jika sudah Approved
+    // Supervisor Revisi -> hanya bisa setelah Submit PO & tidak bisa jika sudah Approved
     btnRevise.addEventListener('click', () => {
-      if (currentStatus === 'Approved' || currentApprovedOnce) {
+      if (!hasSubmittedCurrentPo || currentStatus === 'Approved' || currentApprovedOnce) {
         syncActionButtonsState();
         return;
       }
       const inputNote = document.getElementById('action-note').value.trim();
+      hasSubmittedCurrentPo = false;
       const poObj = collectPoPayload('Revisi');
       setStatusBadge('Revisi');
       upsertPo(poObj);
@@ -892,13 +988,38 @@
       document.getElementById('action-note').value = '';
     });
 
+    // Fitur 1: Preset item cepat
+    document.getElementById('preset-item').addEventListener('change', (e) => {
+      const preset = ITEM_PRESETS[e.target.value];
+      if (!preset) return;
+      const firstRow = tbody.querySelector('tr');
+      const firstDesc = firstRow?.querySelector('.item-desc')?.value.trim();
+      const firstPrice = parseFloat(firstRow?.querySelector('.item-price')?.value) || 0;
+      if (tbody.children.length === 1 && !firstDesc && firstPrice === 0) {
+        tbody.innerHTML = '';
+      }
+      addItemRow(preset.desc, preset.qty, preset.price, preset.ppn, preset.pph);
+      e.target.value = '';
+    });
+
     // Event Listeners Pendukung
     document.getElementById('add-item-btn').addEventListener('click', () => addItemRow());
     document.getElementById('cost-center').addEventListener('change', calculateAndUpdateBudget);
-    document.getElementById('due-date').addEventListener('change', calculateAndUpdateBudget);
-    document.getElementById('vendor-name').addEventListener('input', syncPrintPreview);
+    document.getElementById('po-date').addEventListener('change', () => {
+      applyDueDateFromTop();
+      syncPrintPreview();
+    });
+    document.getElementById('top-days').addEventListener('change', applyDueDateFromTop);
+    document.getElementById('due-date').addEventListener('change', () => {
+      document.getElementById('top-days').value = 'custom';
+      clearValidationMsg();
+      calculateAndUpdateBudget();
+    });
+    document.getElementById('vendor-name').addEventListener('input', () => {
+      clearValidationMsg();
+      syncPrintPreview();
+    });
     document.getElementById('vendor-npwp').addEventListener('input', syncPrintPreview);
-    document.getElementById('po-date').addEventListener('change', syncPrintPreview);
     document.getElementById('btn-print-po').addEventListener('click', () => {
       syncPrintPreview();
       window.print();
