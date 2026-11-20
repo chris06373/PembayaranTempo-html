@@ -166,9 +166,8 @@
 
     <!-- Main Form + Summary Grid -->
     <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 print-grid">
-      <!-- Kolom Kiri & Tengah (2 kolom di desktop) -->
+      <!-- Kolom Kiri & Tengah -->
       <div class="lg:col-span-2 space-y-6 print-left-col">
-        <!-- Info Vendor, Cost Center & Jatuh Tempo -->
         <section class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs print-card space-y-4">
           <h2 class="text-base font-semibold text-slate-900">Informasi Utama, Cost Center & Jatuh Tempo</h2>
 
@@ -218,7 +217,6 @@
             </div>
           </div>
 
-          <!-- Indikator Limit Anggaran Cost Center -->
           <div id="budget-box" class="no-print rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-2">
             <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span class="font-semibold text-slate-700">Limit Anggaran Cost Center</span>
@@ -244,7 +242,6 @@
           </div>
         </section>
 
-        <!-- Rincian Item & Pajak Indonesia -->
         <section class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs print-card space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
@@ -286,7 +283,7 @@
         </section>
       </div>
 
-      <!-- Kolom Kanan: Ringkasan Pajak & Tombol Submit / Approve / Revisi -->
+      <!-- Kolom Kanan -->
       <div class="space-y-6">
         <section class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs print-card space-y-3">
           <h2 class="text-base font-semibold text-slate-900">Ringkasan Biaya & Pajak</h2>
@@ -323,11 +320,10 @@
           </div>
         </section>
 
-        <!-- Panel Langsung: Submit, Approve (Sekali Saja) & Revisi (Supervisor) -->
         <section class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs no-print space-y-4">
           <div>
             <h2 class="text-base font-semibold text-slate-900">Proses PO & Persetujuan Supervisor</h2>
-            <p class="text-xs text-slate-500">Submit PO terlebih dahulu sebelum Approve &amp; Revisi (Approve hanya 1x).</p>
+            <p class="text-xs text-slate-500">Submit PO hanya 1x per PO, lalu Approve (1x) atau Revisi.</p>
           </div>
 
           <div>
@@ -342,27 +338,6 @@
             class="w-full py-2.5 px-4 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
             Submit PO
           </button>
-
-          <!-- Letakkan di panel Proses PO (dekat btn-submit) -->
-          <div class="grid grid-cols-2 gap-2.5">
-            <button type="button" id="btn-save-draft"
-              class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-slate-100 text-slate-800 border border-slate-300 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition">
-              Simpan Draft
-            </button>
-            <button type="button" id="btn-submit"
-              class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
-              Submit PO
-            </button>
-          </div>
-          
-          <!-- Tombol Purchase Invoice (aktif hanya jika status Approved) -->
-          <button type="button" id="btn-create-pi" disabled
-            class="w-full py-2.5 px-4 rounded-lg text-sm font-semibold bg-emerald-700 text-white hover:bg-emerald-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
-            + Buat Purchase Invoice
-          </button>
-          <p id="pi-lock-hint" class="text-[11px] text-slate-500">
-            Purchase Invoice hanya bisa dibuat setelah PO berstatus <strong>Approved</strong>.
-          </p>
 
           <div class="pt-1 border-t border-slate-100 space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-500">
@@ -384,9 +359,8 @@
       </div>
     </div>
 
-    <!-- Histori Pengajuan PO & Histori Log (Tersimpan di localStorage) -->
+    <!-- Histori Pengajuan PO & Histori Log -->
     <section class="mt-8 grid grid-cols-1 xl:grid-cols-2 gap-6 no-print">
-      <!-- Histori Pengajuan PO -->
       <div class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
@@ -413,7 +387,6 @@
         </div>
       </div>
 
-      <!-- Histori Log (Log tersimpan & PO Disetujui masuk ke Log Histori) -->
       <div class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
@@ -470,6 +443,7 @@
 
     // Status: 'Draft' | 'Submitted' | 'Approved' | 'Revisi'
     let currentStatus = 'Draft';
+    let currentSubmittedOnce = false; // Flag khusus: Submit PO hanya boleh 1x per PO
     let hasSubmittedCurrentPo = false;
     let currentApprovedOnce = false;
     let currentSubmittedNote = '';
@@ -498,7 +472,6 @@
       return `PO-${ymd}-${seqNum}`;
     };
 
-    // Fitur 2: Hitung jatuh tempo otomatis dari Tanggal PO + hari TOP
     const applyDueDateFromTop = () => {
       const topVal = document.getElementById('top-days').value;
       if (topVal === 'custom') return;
@@ -519,21 +492,25 @@
 
     const syncActionButtonsState = () => {
       const isApproved = currentStatus === 'Approved' || currentApprovedOnce;
-      // Approve & Revisi baru aktif setelah Submit PO, dan terkunci jika sudah Approved
-      const canActAfterSubmit = hasSubmittedCurrentPo && !isApproved;
+      // Submit PO dikunci jika sudah pernah di-Submit (1x) atau sudah Approved
+      btnSubmit.disabled = isApproved || currentSubmittedOnce;
 
-      btnSubmit.disabled = isApproved;
+      // Approve & Revisi aktif hanya jika PO sedang menunggu proses setelah Submit dan belum Approved
+      const canActAfterSubmit = hasSubmittedCurrentPo && !isApproved;
       btnApprove.disabled = !canActAfterSubmit;
       btnRevise.disabled = !canActAfterSubmit;
 
       if (isApproved) {
-        approveLockInfo.textContent = 'Sudah di-Approve (1x) · Revisi terkunci';
+        approveLockInfo.textContent = 'Sudah di-Approve (1x) · Submit & Revisi terkunci';
         approveLockInfo.className = 'font-semibold text-emerald-700';
+      } else if (currentSubmittedOnce && !hasSubmittedCurrentPo) {
+        approveLockInfo.textContent = 'Submit PO sudah 1x · PO dalam status Revisi';
+        approveLockInfo.className = 'font-medium text-rose-700';
       } else if (!hasSubmittedCurrentPo) {
         approveLockInfo.textContent = 'Submit PO dulu sebelum Approve & Revisi';
         approveLockInfo.className = 'font-medium text-amber-700';
       } else {
-        approveLockInfo.textContent = 'Siap diproses Supervisor (Approve 1x)';
+        approveLockInfo.textContent = 'Sudah di-Submit (1x) · Menunggu Supervisor';
         approveLockInfo.className = 'font-medium text-slate-600';
       }
 
@@ -676,7 +653,6 @@
       return { dpp, ppn, pph, net: dpp + ppn - pph, items };
     };
 
-    // Fitur 3: Validasi data wajib sebelum Submit PO
     const validatePoForSubmit = (totals) => {
       const vendor = document.getElementById('vendor-name').value.trim();
       const poDate = document.getElementById('po-date').value;
@@ -758,6 +734,7 @@
         pph: totals.pph,
         net: totals.net,
         status,
+        submittedOnce: currentSubmittedOnce,
         hasSubmitted: hasSubmittedCurrentPo,
         approvedOnce: currentApprovedOnce,
         submittedNote: currentSubmittedNote,
@@ -792,7 +769,11 @@
       document.getElementById('action-note').value = '';
 
       currentApprovedOnce = Boolean(poObj.approvedOnce || poObj.status === 'Approved');
-      // Jika status 'Revisi', wajib Submit ulang sebelum Approve/Revisi lagi
+      currentSubmittedOnce = Boolean(
+        poObj.submittedOnce ||
+        poObj.hasSubmitted ||
+        ['Submitted', 'Approved', 'Revisi'].includes(poObj.status)
+      );
       hasSubmittedCurrentPo = Boolean(
         !currentApprovedOnce && poObj.status !== 'Revisi' && (poObj.hasSubmitted || poObj.status === 'Submitted')
       );
@@ -816,6 +797,7 @@
       document.getElementById('po-notes').value = '';
       document.getElementById('action-note').value = '';
       document.getElementById('top-days').value = '30';
+      currentSubmittedOnce = false;
       hasSubmittedCurrentPo = false;
       currentApprovedOnce = false;
       currentSubmittedNote = '';
@@ -930,9 +912,13 @@
         .join('');
     };
 
-    // Submit PO (wajib valid & wajib sebelum Approve/Revisi)
+    // Submit PO: hanya 1 kali per PO
     btnSubmit.addEventListener('click', () => {
-      if (currentStatus === 'Approved' || currentApprovedOnce) return;
+      if (currentStatus === 'Approved' || currentApprovedOnce || currentSubmittedOnce) {
+        showValidationMsg('PO ini sudah pernah di-Submit (maksimal 1 kali per PO).');
+        syncActionButtonsState();
+        return;
+      }
       const totals = getFormTotals();
       const errMsg = validatePoForSubmit(totals);
       if (errMsg) {
@@ -945,6 +931,7 @@
       if (inputNote) {
         currentSubmittedNote = inputNote;
       }
+      currentSubmittedOnce = true;
       hasSubmittedCurrentPo = true;
       const poObj = collectPoPayload('Submitted');
       setStatusBadge('Submitted');
@@ -960,7 +947,7 @@
       document.getElementById('action-note').value = '';
     });
 
-    // Supervisor Approve -> hanya bisa setelah Submit PO & hanya 1x per PO
+    // Supervisor Approve -> hanya 1x per PO setelah Submit
     btnApprove.addEventListener('click', () => {
       if (!hasSubmittedCurrentPo || currentApprovedOnce || currentStatus === 'Approved') {
         syncActionButtonsState();
@@ -987,7 +974,7 @@
       document.getElementById('action-note').value = '';
     });
 
-    // Supervisor Revisi -> hanya bisa setelah Submit PO & tidak bisa jika sudah Approved
+    // Supervisor Revisi -> tetap menjaga currentSubmittedOnce = true agar tidak bisa submit ulang
     btnRevise.addEventListener('click', () => {
       if (!hasSubmittedCurrentPo || currentStatus === 'Approved' || currentApprovedOnce) {
         syncActionButtonsState();
@@ -1009,7 +996,6 @@
       document.getElementById('action-note').value = '';
     });
 
-    // Fitur 1: Preset item cepat
     document.getElementById('preset-item').addEventListener('change', (e) => {
       const preset = ITEM_PRESETS[e.target.value];
       if (!preset) return;
@@ -1023,7 +1009,6 @@
       e.target.value = '';
     });
 
-    // Event Listeners Pendukung
     document.getElementById('add-item-btn').addEventListener('click', () => addItemRow());
     document.getElementById('cost-center').addEventListener('change', calculateAndUpdateBudget);
     document.getElementById('po-date').addEventListener('change', () => {
@@ -1058,121 +1043,6 @@
     renderPoHistory();
     renderLogHistory();
     calculateAndUpdateBudget();
-
-    // Tambah key draft di STORAGE_KEYS
-STORAGE_KEYS.DRAFT = 'po_app_v4_draft';
-
-const btnSaveDraft = document.getElementById('btn-save-draft');
-const btnCreatePi = document.getElementById('btn-create-pi');
-const piLockHint = document.getElementById('pi-lock-hint');
-
-// Update syncActionButtonsState():
-// - Jika status 'Submitted' atau 'Approved', tombol Submit PO dikunci (kecuali status 'Revisi' atau klik '+ PO Baru')
-// - Tombol 'Buat Purchase Invoice' hanya aktif saat currentStatus === 'Approved'
-const syncActionButtonsState = () => {
-  const isApproved = currentStatus === 'Approved' || currentApprovedOnce;
-  const isLockedSubmit = currentStatus === 'Submitted' || isApproved;
-  const canActAfterSubmit = hasSubmittedCurrentPo && !isApproved;
-
-  btnSaveDraft.disabled = isApproved || currentStatus === 'Submitted';
-  btnSubmit.disabled = isLockedSubmit;
-  btnApprove.disabled = !canActAfterSubmit;
-  btnRevise.disabled = !canActAfterSubmit;
-  btnCreatePi.disabled = !isApproved;
-
-  if (isApproved) {
-    approveLockInfo.textContent = 'Sudah di-Approve · Buat PO Baru untuk submit lagi';
-    approveLockInfo.className = 'font-semibold text-emerald-700';
-    piLockHint.textContent = 'PO sudah Approved — siap membuat Purchase Invoice.';
-    piLockHint.className = 'text-[11px] font-medium text-emerald-700';
-  } else if (currentStatus === 'Submitted') {
-    approveLockInfo.textContent = 'Menunggu Supervisor (Terkunci kecuali Revisi / PO Baru)';
-    approveLockInfo.className = 'font-medium text-amber-700';
-    piLockHint.textContent = 'Menunggu status Approved untuk membuat Purchase Invoice.';
-    piLockHint.className = 'text-[11px] text-slate-500';
-  } else if (currentStatus === 'Revisi') {
-    approveLockInfo.textContent = 'Status Revisi · Silakan perbaiki lalu Submit PO ulang';
-    approveLockInfo.className = 'font-medium text-rose-700';
-    piLockHint.textContent = 'PO perlu disubmit ulang dan di-Approve sebelum buat Invoice.';
-    piLockHint.className = 'text-[11px] text-slate-500';
-  } else {
-    approveLockInfo.textContent = 'Draft / Submit PO dulu sebelum Approve & Revisi';
-    approveLockInfo.className = 'font-medium text-slate-600';
-    piLockHint.textContent = 'Purchase Invoice hanya bisa dibuat setelah PO berstatus Approved.';
-    piLockHint.className = 'text-[11px] text-slate-500';
-  }
-};
-
-// Simpan Draft manual & otomatis
-const saveDraftToStorage = (silent = false) => {
-  if (currentStatus === 'Approved' || currentStatus === 'Submitted') return;
-  const draftObj = collectPoPayload(currentStatus === 'Revisi' ? 'Revisi' : 'Draft');
-  saveData(STORAGE_KEYS.DRAFT, draftObj);
-  upsertPo(draftObj);
-  if (!silent) {
-    addLogEntry({
-      poNumber: draftObj.poNumber,
-      role: 'Admin',
-      action: 'Simpan Draft PO',
-      note: document.getElementById('action-note').value.trim() || 'Tersimpan sebagai draft',
-      amount: draftObj.net,
-      isApproved: false
-    });
-  }
-};
-
-// Fitur Penutup Kekurangan 1: Deteksi potensi PO duplikat (Vendor + Cost Center + Total Netto)
-const hasDuplicatePo = (candidate) =>
-  poList.some(
-    (p) =>
-      p.poNumber !== candidate.poNumber &&
-      (p.status === 'Submitted' || p.status === 'Approved') &&
-      p.vendor.toLowerCase() === candidate.vendor.toLowerCase() &&
-      p.costCenter === candidate.costCenter &&
-      p.net === candidate.net
-  );
-
-// Fitur Penutup Kekurangan 2: Auto-save draft saat input berubah (ketika masih Draft/Revisi)
-const autoSaveDraft = () => {
-  if (currentStatus === 'Draft' || currentStatus === 'Revisi') {
-    saveDraftToStorage(true);
-  }
-};
-
-btnSaveDraft.addEventListener('click', () => saveDraftToStorage(false));
-
-// Di handler btnSubmit: cegah submit jika sudah Submitted/Approved & cek duplikasi
-btnSubmit.addEventListener('click', () => {
-  if (currentStatus === 'Submitted' || currentStatus === 'Approved' || currentApprovedOnce) return;
-  const totals = getFormTotals();
-  const errMsg = validatePoForSubmit(totals);
-  if (errMsg) return showValidationMsg(errMsg);
-
-  const candidate = collectPoPayload('Submitted');
-  if (hasDuplicatePo(candidate)) {
-    return showValidationMsg(
-      'Peringatan: Ada PO aktif/disetujui dengan Vendor, Cost Center, dan Total yang sama. Pastikan bukan duplikasi.'
-    );
-  }
-  // ...lanjutkan proses submit & lock tombol via setStatusBadge('Submitted')
-});
-
-// Gate pembuatan Purchase Invoice: hanya jalan jika status Approved
-btnCreatePi.addEventListener('click', () => {
-  if (currentStatus !== 'Approved') {
-    return showValidationMsg('Purchase Invoice tidak bisa dibuat sebelum PO berstatus Approved.');
-  }
-  const poData = collectPoPayload('Approved');
-  addLogEntry({
-    poNumber: poData.poNumber,
-    role: 'Finance/Admin',
-    action: 'Buat Purchase Invoice',
-    note: `Referensi PO ${poData.poNumber} (Jatuh tempo ${poData.dueDate})`,
-    amount: poData.net,
-    isApproved: true
-  });
-  alert(`Purchase Invoice untuk ${poData.poNumber} (${formatIDR(poData.net)}) siap diproses.`);
-});
   </script>
 </body>
 </html>
